@@ -56,7 +56,7 @@ class Promise {
       }
 
       if (this.state === 'pending') {
-        this.onFulfilledCallbacks.push(() => {
+        this.onResolvedCallbacks.push(() => {
           setTimeout(() => {
             try {
               let x = onFulfilled(this.value)
@@ -89,16 +89,16 @@ function resolvePromise(promise2, x, resolve, reject) {
     return reject(new TypeError('Chaining cycle detected for promise'))
   }
   let called
-  if (x !== 'null' && (typeof x === 'object' || typeof x === 'function')) {
+  if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
     try {
       let then = x.then
       if (typeof then === 'function') {
         then.call(x, value => {
-          if (!called) return
+          if (called) return
           called = true
           resolvePromise(promise2, value, resolve, reject)
         }, reason => {
-          if (!called) return
+          if (called) return
           called = true
           reject(reason)
         })
@@ -106,7 +106,7 @@ function resolvePromise(promise2, x, resolve, reject) {
         resolve(x)
       }
     } catch (e) {
-      if (!called) return
+      if (called) return
       called = true
       reject(e)
     }
