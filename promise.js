@@ -1,94 +1,128 @@
 class Promise {
   constructor(executor) {
-    if (typeof executor !== 'function') {
-      throw new Error(`Promise resolver ${executor} in not a function`)
-    }
-
-    this.initValue()
-    this.initBind()
-
+    this.state = 'pending';
+    this.value = undefined;
+    this.reason = undefined;
+    this.onResolvedCallbacks = [];
+    this.onRejectedCallbacks = [];
+    let resolve = value => {
+      if (this.state === 'pending') {
+        this.state = 'fulfilled';
+        this.value = value;
+        this.onResolvedCallbacks.forEach(fn => fn());
+      }
+    };
+    let reject = reason => {
+      if (this.state === 'pending') {
+        this.state = 'rejected';
+        this.reason = reason;
+        this.onRejectedCallbacks.forEach(fn => fn());
+      }
+    };
     try {
-      executor.call(this, this.resolve, this.reject)
-    } catch (e) {
-      this.reject(e)
-    }
-  }
-
-  initValue() {
-    this.value = null
-    this.reason = null
-    // 不可逆 pending fulfilled rejected
-    this.state = Promise.PENDING
-    this.onFulfilledCallbacks = []
-    this.onRejectedCallbacks = []
-  }
-
-  initBind() {
-    this.resolve = this.resolve.bind(this)
-    this.reject = this.reject.bind(this)
-  }
-
-  resolve(value) {
-    // 状态改变 成功回调执行
-    if (this.state === Promise.PENDING) {
-      this.state = Promise.FULFILLED
-      this.value = value
-      this.onFulfilledCallbacks.forEach(fn => fn(this.value))
-    }
-  }
-
-  reject(reason) {
-    // 状态改变 失败回调执行
-    if (this.state === Promise.PENDING) {
-      this.state = Promise.REJECTED
-      this.reason = reason
-      this.onRejectedCallbacks.forEach(fn => fn(this.reason))
+      executor(resolve, reject);
+    } catch (err) {
+      reject(err);
     }
   }
 
   then(onFulfilled, onRejected) {
-    if (typeof onFulfilled !== 'function') {
-      onFulfilled = value => {
-        return value
-      }
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : value => value
+    onRejected = typeof onRejected === 'function' ? onRejected : err => {
+      throw err
     }
 
-    if (typeof onRejected !== 'function') {
-      onRejected = reason => {
-        return reason
-      }
-    }
-
-    if (this.state === Promise.FULFILLED) {
-      setTimeout(() => {
-        onFulfilled(this.value)
-      })
-    }
-
-    if (this.state === Promise.REJECTED) {
-      setTimeout(() => {
-        onRejected(this.reason)
-      })
-    }
-
-    if (this.state === Promise.PENDING) {
-      this.onFulfilledCallbacks.push(value => {
+    let promise2 = new Promise((resolve, reject) => {
+      if (this.state === 'fulfilled') {
         setTimeout(() => {
-          onFulfilled(this.value)
+          try {
+            let x = onFulfilled(this.value)
+            resolvePromise(promise2, x, resolve, reject)
+          } catch (e) {
+            reject(e)
+          }
         })
-      })
+      }
 
-      this.onRejectedCallbacks.push(reason => {
+      if (this.state === 'rejected') {
         setTimeout(() => {
-          onRejected(this.reason)
+          try {
+            let x = onRejected(this.reason)
+            resolvePromise(promise2, x, resolve, reject)
+          } catch (e) {
+            reject(e)
+          }
         })
-      })
-    }
+      }
+
+      if (this.state === 'pending') {
+        this.onFulfilledCallbacks.push(() => {
+          setTimeout(() => {
+            try {
+              let x = onFulfilled(this.value)
+              resolvePromise(promise2, x, resolve, reject)
+            } catch (e) {
+              reject(e)
+            }
+          })
+        })
+
+        this.onRejectedCallbacks.push(() => {
+          setTimeout(() => {
+            try {
+              let x = onRejected(this.reason)
+              resolvePromise(promise2, x, resolve, reject)
+            } catch (e) {
+              reject(e)
+            }
+          })
+        })
+      }
+    })
+
+    return promise2
   }
 }
 
-Promise.PENDING = 'pending'
-Promise.FULFILLED = 'fulfilled'
-Promise.REJECTED = 'rejected'
+function resolvePromise(promise2, x, resolve, reject) {
+  if (x === promise2) {
+    return reject(new TypeError('Chaining cycle detected for promise'))
+  }
+  let called
+  if (x !== 'null' && (typeof x === 'object' || typeof x === 'function')) {
+    try {
+      let then = x.then
+      if (typeof then === 'function') {
+        then.call(x, value => {
+          if (!called) return
+          called = true
+          resolvePromise(promise2, value, resolve, reject)
+        }, reason => {
+          if (!called) return
+          called = true
+          reject(reason)
+        })
+      } else {
+        resolve(x)
+      }
+    } catch (e) {
+      if (!called) return
+      called = true
+      reject(e)
+    }
+  } else {
+    resolve(x)
+  }
+}
+
+Promise.deferred = function () {
+  const defer = {}
+  defer.promise = new Promise((resolve, reject) => {
+    defer.resolve = resolve
+    defer.reject = reject
+  })
+  return defer
+}
+
 
 module.exports = Promise

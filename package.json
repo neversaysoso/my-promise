@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/neversaysoso/my-promise/issues"
   },
-  "homepage": "https://github.com/neversaysoso/my-promise#readme"
+  "homepage": "https://github.com/neversaysoso/my-promise#readme",
+  "dependencies": {
+    "promises-aplus-tests": "^2.1.2"
+  }
 }

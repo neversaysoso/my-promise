@@ -1,9 +1,19 @@
 new Promise((resolve, reject) => {
+  // throw new Error('error')
   setTimeout(() => {
-      resolve(1)
-  }, 1000)
+    resolve('sssssss')
+  }, 500)
 }).then(v => {
-  console.log(v)
+  console.log('v1:', v)
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve(new Promise(r => {
+        r('333333333')
+      }))
+    }, 500)
+  })
 }, r => {
-  console.log(r)
+  console.log('r:', r)
+}).then(v => {
+  console.log('v2:', v)
 })
