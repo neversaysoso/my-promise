@@ -86,6 +86,10 @@ class Promise {
 
     return promise
   }
+
+  catch (cb) {
+    return this.then(null, cb)
+  }
 }
 
 function resolvePromise(promise, x, resolve, reject) {
