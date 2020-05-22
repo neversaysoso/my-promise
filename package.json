@@ -1,0 +1,20 @@
+{
+  "name": "my-promise",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neversaysoso/my-promise.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/neversaysoso/my-promise/issues"
+  },
+  "homepage": "https://github.com/neversaysoso/my-promise#readme"
+}
