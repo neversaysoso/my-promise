@@ -1,28 +1,32 @@
+const PENDING = 'pending'
+const FULFULLED = 'fulfilled'
+const REJECTED = 'rejected'
+
 class Promise {
   constructor(executor) {
-    this.state = 'pending';
-    this.value = undefined;
-    this.reason = undefined;
-    this.onResolvedCallbacks = [];
-    this.onRejectedCallbacks = [];
+    this.state = PENDING
+    this.value = undefined
+    this.reason = undefined
+    this.onResolvedCallbacks = []
+    this.onRejectedCallbacks = []
     let resolve = value => {
-      if (this.state === 'pending') {
-        this.state = 'fulfilled';
-        this.value = value;
-        this.onResolvedCallbacks.forEach(fn => fn());
+      if (this.state === PENDING) {
+        this.state = FULFULLED
+        this.value = value
+        this.onResolvedCallbacks.forEach(fn => fn())
       }
-    };
+    }
     let reject = reason => {
-      if (this.state === 'pending') {
-        this.state = 'rejected';
-        this.reason = reason;
-        this.onRejectedCallbacks.forEach(fn => fn());
+      if (this.state === PENDING) {
+        this.state = REJECTED
+        this.reason = reason
+        this.onRejectedCallbacks.forEach(fn => fn())
       }
-    };
+    }
     try {
-      executor(resolve, reject);
+      executor.call(this, resolve, reject)
     } catch (err) {
-      reject(err);
+      reject(err)
     }
   }
 
@@ -32,35 +36,35 @@ class Promise {
       throw err
     }
 
-    let promise2 = new Promise((resolve, reject) => {
-      if (this.state === 'fulfilled') {
+    let promise = new Promise((resolve, reject) => {
+      if (this.state === FULFULLED) {
         setTimeout(() => {
           try {
             let x = onFulfilled(this.value)
-            resolvePromise(promise2, x, resolve, reject)
+            resolvePromise(promise, x, resolve, reject)
           } catch (e) {
             reject(e)
           }
         })
       }
 
-      if (this.state === 'rejected') {
+      if (this.state === REJECTED) {
         setTimeout(() => {
           try {
             let x = onRejected(this.reason)
-            resolvePromise(promise2, x, resolve, reject)
+            resolvePromise(promise, x, resolve, reject)
           } catch (e) {
             reject(e)
           }
         })
       }
 
-      if (this.state === 'pending') {
+      if (this.state === PENDING) {
         this.onResolvedCallbacks.push(() => {
           setTimeout(() => {
             try {
               let x = onFulfilled(this.value)
-              resolvePromise(promise2, x, resolve, reject)
+              resolvePromise(promise, x, resolve, reject)
             } catch (e) {
               reject(e)
             }
@@ -71,7 +75,7 @@ class Promise {
           setTimeout(() => {
             try {
               let x = onRejected(this.reason)
-              resolvePromise(promise2, x, resolve, reject)
+              resolvePromise(promise, x, resolve, reject)
             } catch (e) {
               reject(e)
             }
@@ -80,12 +84,12 @@ class Promise {
       }
     })
 
-    return promise2
+    return promise
   }
 }
 
-function resolvePromise(promise2, x, resolve, reject) {
-  if (x === promise2) {
+function resolvePromise(promise, x, resolve, reject) {
+  if (x === promise) {
     return reject(new TypeError('Chaining cycle detected for promise'))
   }
   let called
@@ -96,7 +100,7 @@ function resolvePromise(promise2, x, resolve, reject) {
         then.call(x, value => {
           if (called) return
           called = true
-          resolvePromise(promise2, value, resolve, reject)
+          resolvePromise(promise, value, resolve, reject)
         }, reason => {
           if (called) return
           called = true
@@ -123,6 +127,5 @@ Promise.deferred = function () {
   })
   return defer
 }
-
 
 module.exports = Promise
